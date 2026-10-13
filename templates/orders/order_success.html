@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Confirmed #{{ order.order_number }} — ShopSmart{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    
+    <div class="max-w-700 mx-auto">
+        <div class="bg-white rounded-4 border p-4 p-lg-5 shadow-sm text-center mb-4">
+            
+            <div class="rounded-circle bg-success-subtle text-success d-inline-flex align-items-center justify-content-center p-3 mb-3" style="width: 80px; height: 80px;">
+                <i class="bi bi-check2 fs-1"></i>
+            </div>
+
+            <h2 class="fw-bold mb-1">Thank You for Your Order!</h2>
+            <p class="text-muted">A confirmation has been sent to <strong>{{ order.email }}</strong></p>
+
+            <div class="d-inline-flex align-items-center gap-3 bg-light border rounded-pill px-4 py-2 my-3">
+                <span class="small text-muted">Order ID: <strong>{{ order.order_number }}</strong></span>
+                <span class="text-muted">|</span>
+                <span class="small text-muted">Tracking: <strong>{{ order.tracking_number }}</strong></span>
+            </div>
+
+            <!-- Delivery Tracking Timeline -->
+            <div class="tracking-timeline my-4">
+                <div class="timeline-step">
+                    <div class="step-icon active"><i class="bi bi-check-lg"></i></div>
+                    <div class="small fw-bold">Placed</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">Today</div>
+                </div>
+                <div class="timeline-step">
+                    <div class="step-icon active"><i class="bi bi-gear-fill"></i></div>
+                    <div class="small fw-bold">Processing</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">Active</div>
+                </div>
+                <div class="timeline-step">
+                    <div class="step-icon"><i class="bi bi-truck"></i></div>
+                    <div class="small text-muted">Shipped</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">In 24h</div>
+                </div>
+                <div class="timeline-step">
+                    <div class="step-icon"><i class="bi bi-house-door-fill"></i></div>
+                    <div class="small text-muted">Delivered</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">Estimated 2-3 Days</div>
+                </div>
+            </div>
+
+            <!-- Action Buttons: PDF Invoice & Continue -->
+            <div class="d-flex flex-wrap justify-content-center gap-3 pt-3 border-top">
+                <a href="{% url 'order_invoice' order.order_number %}" class="btn btn-outline-custom">
+                    <i class="bi bi-file-earmark-pdf text-danger me-2"></i> Download Tax Invoice (PDF)
+                </a>
+                <a href="{% url 'product_list' %}" class="btn btn-primary-custom">
+                    <i class="bi bi-bag me-2"></i> Continue Shopping
+                </a>
+            </div>
+
+        </div>
+
+        <!-- Order Summary Details -->
+        <div class="bg-white rounded-4 border p-4 shadow-sm">
+            <h5 class="fw-bold mb-3 border-bottom pb-2">Order Items Summary</h5>
+            
+            <div class="d-flex flex-column gap-3 mb-4">
+                {% for item in order.items.all %}
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        {% if item.product %}
+                        <img src="{{ item.product.display_image }}" class="rounded border" style="width: 50px; height: 50px; object-fit: cover;">
+                        {% endif %}
+                        <div>
+                            <div class="fw-semibold small">{{ item.product_name }}</div>
+                            <small class="text-muted">Quantity: {{ item.quantity }} × ₹{{ item.price }}</small>
+                        </div>
+                    </div>
+                    <span class="fw-bold small">₹{{ item.total_price }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="border-top pt-3">
+                <div class="d-flex justify-content-between small text-muted mb-1">
+                    <span>Payment Method:</span>
+                    <strong class="text-dark">{{ order.get_payment_method_display }}</strong>
+                </div>
+                <div class="d-flex justify-content-between small text-muted mb-1">
+                    <span>Shipping To:</span>
+                    <strong class="text-dark">{{ order.full_name }}, {{ order.city }} - {{ order.postal_code }}</strong>
+                </div>
+                <div class="d-flex justify-content-between align-items-center pt-2 mt-2 border-top">
+                    <span class="fw-bold">Total Paid:</span>
+                    <span class="fw-bold fs-5 text-primary">₹{{ order.total_amount }}</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

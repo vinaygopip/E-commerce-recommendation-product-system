@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}ShopSmart — E-Commerce Platform & Recommendation Engine{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <!-- Hero Section -->
+    <div class="hero-section shadow-sm rounded-4 mb-5 position-relative">
+        <div class="row align-items-center">
+            <div class="col-lg-7 col-xl-6">
+                <h1 class="hero-title mb-3">Shop Smarter with Next-Gen Intelligence.</h1>
+                <p class="hero-subtitle mb-4">
+                    Discover curated electronics, gadgets, fashion, and lifestyle essentials personalized for your taste, with real-time deal comparisons.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg px-4 py-3 rounded-pill fw-semibold shadow-sm d-flex align-items-center gap-2">
+                        <i class="bi bi-grid-fill"></i>
+                        <span>Browse All Products</span>
+                    </a>
+                    <a href="{% url 'cross_platform_deals' %}" class="btn btn-outline-primary btn-lg px-4 py-3 rounded-pill fw-semibold bg-white bg-opacity-75 shadow-sm d-flex align-items-center gap-2">
+                        <i class="bi bi-tag-fill"></i>
+                        <span>Compare Best Deals</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Shop by Categories -->
+    <div class="mb-5">
+        <div class="section-header">
+            <div>
+                <h2 class="section-title">Explore Categories</h2>
+            </div>
+            <a href="{% url 'product_list' %}" class="btn btn-sm btn-outline-custom">View All</a>
+        </div>
+
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-3">
+            {% for cat in categories %}
+            <div class="col">
+                <a href="{% url 'product_list_by_category' cat.slug %}" class="category-card">
+                    <div class="category-icon-box">
+                        <i class="bi {{ cat.icon }}"></i>
+                    </div>
+                    <h6 class="fw-bold mb-1 text-truncate">{{ cat.name }}</h6>
+                    <small class="text-muted">{{ cat.products.count }} items</small>
+                </a>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-4 text-muted">No categories available.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ⭐ PERSONALIZED HYBRID RECOMMENDATIONS SECTION -->
+    <div class="mb-5">
+        <div class="section-header">
+            <div>
+                <div>
+                    <h2 class="section-title mb-0">Recommended For You</h2>
+                </div>
+            </div>
+            <a href="{% url 'recommendations_showcase' %}" class="btn btn-sm btn-outline-custom">
+                <i class="bi bi-info-circle me-1"></i> Why these?
+            </a>
+        </div>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+            {% for rec in hybrid_recs %}
+            <div class="col">
+                <div class="product-card">
+                    <!-- Wishlist heart button -->
+                    <button class="btn-wishlist btn-wishlist-ajax {% if rec.product.id in user_wishlist_ids %}active{% endif %}" 
+                            data-product-id="{{ rec.product.id }}" title="Save to Wishlist">
+                        <i class="bi {% if rec.product.id in user_wishlist_ids %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                    </button>
+
+                    <!-- Discount Pill -->
+                    {% if rec.product.discount_percent > 0 %}
+                    <span class="badge-discount">{{ rec.product.discount_percent }}% OFF</span>
+                    {% endif %}
+
+                    <!-- Product Image -->
+                    <a href="{{ rec.product.get_absolute_url }}" class="product-thumb-wrapper">
+                        <img src="{{ rec.product.display_image }}" alt="{{ rec.product.name }}" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80';">
+                    </a>
+
+                    <!-- Product Card Body -->
+                    <div class="product-card-body">
+                        
+                        <!-- AI Explanation Banner -->
+                        <div class="ai-rec-tag text-truncate" title="{{ rec.explanation }}">
+                            <i class="bi bi-stars text-primary"></i>
+                            <span class="text-truncate">{{ rec.explanation }}</span>
+                        </div>
+
+                        <div class="product-category-tag">{{ rec.product.category.name }}</div>
+                        <a href="{{ rec.product.get_absolute_url }}" class="product-title">{{ rec.product.name }}</a>
+
+                        <!-- Rating Stars -->
+                        <div class="d-flex align-items-center gap-1 mb-2">
+                            <div class="rating-stars">
+                                <i class="bi bi-star-fill"></i>
+                            </div>
+                            <span class="fw-bold small">{{ rec.product.rating_avg }}</span>
+                            <span class="text-muted small">({{ rec.product.rating_count }})</span>
+                        </div>
+
+                        <!-- Price and Add to Cart -->
+                        <div class="mt-auto d-flex align-items-center justify-content-between pt-2 border-top border-light">
+                            <div>
+                                <span class="price-current">₹{{ rec.product.discounted_price }}</span>
+                                {% if rec.product.discount_percent > 0 %}
+                                <span class="price-old">₹{{ rec.product.price }}</span>
+                                {% endif %}
+                            </div>
+                            
+                            <button class="btn btn-sm btn-primary-custom btn-cart-ajax" data-product-id="{{ rec.product.id }}">
+                                <i class="bi bi-bag-plus me-1"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5 text-muted">
+                <i class="bi bi-box fs-1 d-block mb-2"></i>
+                No recommendations found yet. Start browsing products to train your personal profile!
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ⭐ TRENDING PRODUCTS SECTION -->
+    <div class="mb-5">
+        <div class="section-header">
+            <div>
+                <h2 class="section-title">Trending Now</h2>
+            </div>
+            <a href="{% url 'product_list' %}?sort=popularity" class="btn btn-sm btn-outline-custom">View All</a>
+        </div>
+
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+            {% for prod in trending_products|slice:":4" %}
+            <div class="col">
+                <div class="product-card">
+                    <button class="btn-wishlist btn-wishlist-ajax {% if prod.id in user_wishlist_ids %}active{% endif %}" 
+                            data-product-id="{{ prod.id }}">
+                        <i class="bi {% if prod.id in user_wishlist_ids %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+                    </button>
+
+                    {% if prod.discount_percent > 0 %}
+                    <span class="badge-discount">{{ prod.discount_percent }}% OFF</span>
+                    {% endif %}
+
+                    <a href="{{ prod.get_absolute_url }}" class="product-thumb-wrapper">
+                        <img src="{{ prod.display_image }}" alt="{{ prod.name }}" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80';">
+                    </a>
+
+                    <div class="product-card-body">
+                        <div class="product-category-tag">{{ prod.category.name }}</div>
+                        <a href="{{ prod.get_absolute_url }}" class="product-title">{{ prod.name }}</a>
+
+                        <div class="d-flex align-items-center gap-1 mb-2">
+                            <div class="rating-stars"><i class="bi bi-star-fill"></i></div>
+                            <span class="fw-bold small">{{ prod.rating_avg }}</span>
+                            <span class="text-muted small">({{ prod.view_count }} views)</span>
+                        </div>
+
+                        <div class="mt-auto d-flex align-items-center justify-content-between pt-2 border-top border-light">
+                            <div>
+                                <span class="price-current">₹{{ prod.discounted_price }}</span>
+                                {% if prod.discount_percent > 0 %}
+                                <span class="price-old">₹{{ prod.price }}</span>
+                                {% endif %}
+                            </div>
+                            <button class="btn btn-sm btn-primary-custom btn-cart-ajax" data-product-id="{{ prod.id }}">
+                                <i class="bi bi-bag-plus me-1"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ⭐ RECENTLY VIEWED PRODUCTS (Conditional on user/session history) -->
+    {% if recently_viewed %}
+    <div class="mb-5">
+        <div class="section-header">
+            <div>
+                <h2 class="section-title">Recently Viewed</h2>
+                <p class="section-subtitle">Pick up right where you left off</p>
+            </div>
+        </div>
+
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-3">
+            {% for r_prod in recently_viewed %}
+            <div class="col">
+                <div class="product-card">
+                    <a href="{{ r_prod.get_absolute_url }}" class="product-thumb-wrapper" style="padding-top: 100%;">
+                        <img src="{{ r_prod.display_image }}" alt="{{ r_prod.name }}" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80';">
+                    </a>
+                    <div class="p-2 text-center">
+                        <a href="{{ r_prod.get_absolute_url }}" class="fw-semibold text-dark text-truncate d-block small text-decoration-none">
+                            {{ r_prod.name }}
+                        </a>
+                        <div class="fw-bold text-primary small">₹{{ r_prod.discounted_price }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+
+</div>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}My Wishlist — ShopSmart{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">My Saved Wishlist</h2>
+            <p class="text-muted small">{{ items.count }} items saved</p>
+        </div>
+        <a href="{% url 'product_list' %}" class="btn btn-outline-custom btn-sm">Browse More Products</a>
+    </div>
+
+    {% if items %}
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+        {% for item in items %}
+        <div class="col">
+            <div class="product-card">
+                <a href="{{ item.product.get_absolute_url }}" class="product-thumb-wrapper">
+                    <img src="{{ item.product.display_image }}" alt="{{ item.product.name }}">
+                </a>
+
+                <div class="product-card-body">
+                    <div class="product-category-tag">{{ item.product.category.name }}</div>
+                    <a href="{{ item.product.get_absolute_url }}" class="product-title">{{ item.product.name }}</a>
+
+                    <div class="d-flex align-items-center gap-1 mb-2">
+                        <div class="rating-stars"><i class="bi bi-star-fill"></i></div>
+                        <span class="fw-bold small">{{ item.product.rating_avg }}</span>
+                        <span class="text-muted small">({{ item.product.rating_count }})</span>
+                    </div>
+
+                    <div class="d-flex align-items-baseline gap-2 mb-3">
+                        <span class="price-current">₹{{ item.product.discounted_price }}</span>
+                        {% if item.product.discount_percent > 0 %}
+                        <span class="price-old">₹{{ item.product.price }}</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mt-auto d-flex flex-column gap-2 border-top pt-2">
+                        <a href="{% url 'wishlist_move_to_cart' item.product.id %}" class="btn btn-primary-custom btn-sm w-100">
+                            <i class="bi bi-bag-plus me-1"></i> Move to Cart
+                        </a>
+                        <form method="POST" action="{% url 'wishlist_toggle' item.product.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                <i class="bi bi-trash3 me-1"></i> Remove
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-4 border p-5 text-center shadow-sm">
+        <i class="bi bi-heartbreak fs-1 text-muted d-block mb-3"></i>
+        <h4 class="fw-bold">Your Wishlist is Empty</h4>
+        <p class="text-muted small">Save items by tapping the heart icon on any product.</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary-custom mt-2">Explore Catalog</a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

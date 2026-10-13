@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}Order #{{ order.order_number }} — ShopSmart{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'order_list' %}">My Orders</a></li>
+            <li class="breadcrumb-item active">{{ order.order_number }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold mb-1">Order #{{ order.order_number }}</h2>
+            <p class="text-muted small mb-0">Placed on {{ order.created_at|date:"F d, Y at h:i A" }} • Tracking #{{ order.tracking_number }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'order_invoice' order.order_number %}" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Download Tax Invoice
+            </a>
+            <a href="{% url 'order_list' %}" class="btn btn-outline-custom btn-sm">Back to Orders</a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="bg-white rounded-4 border p-4 shadow-sm mb-4">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">Items in this Order</h5>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="small text-muted border-bottom">
+                            <tr>
+                                <th>Item</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items.all %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        {% if item.product %}
+                                        <img src="{{ item.product.display_image }}" class="rounded border object-fit-cover" style="width: 50px; height: 50px;">
+                                        {% endif %}
+                                        <div>
+                                            {% if item.product %}
+                                            <a href="{{ item.product.get_absolute_url }}" class="fw-semibold text-dark text-decoration-none small d-block">
+                                                {{ item.product_name }}
+                                            </a>
+                                            {% else %}
+                                            <span class="fw-semibold text-dark small">{{ item.product_name }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="small">₹{{ item.price }}</td>
+                                <td class="small">{{ item.quantity }}</td>
+                                <td class="text-end fw-bold small">₹{{ item.total_price }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="bg-white rounded-4 border p-4 shadow-sm mb-4">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">Delivery & Payment</h5>
+                <div class="small mb-3">
+                    <strong class="d-block text-muted text-uppercase mb-1" style="font-size: 0.75rem;">Shipping Address</strong>
+                    <div class="text-dark">{{ order.full_name }}</div>
+                    <div>{{ order.address }}</div>
+                    <div>{{ order.city }}, {{ order.state }} - {{ order.postal_code }}</div>
+                    <div>Phone: {{ order.phone }}</div>
+                </div>
+                <div class="small mb-3 border-top pt-2">
+                    <strong class="d-block text-muted text-uppercase mb-1" style="font-size: 0.75rem;">Payment Information</strong>
+                    <div>Method: <strong>{{ order.get_payment_method_display }}</strong></div>
+                    <div>Status: <span class="badge bg-success-subtle text-success">{{ order.payment_status }}</span></div>
+                </div>
+                <div class="border-top pt-3">
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span>Subtotal:</span>
+                        <span>₹{{ order.subtotal }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span>Shipping:</span>
+                        <span>₹{{ order.shipping_fee }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between fw-bold fs-5 text-dark border-top pt-2 mt-2">
+                        <span>Total:</span>
+                        <span class="text-primary">₹{{ order.total_amount }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

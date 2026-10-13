@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Cross-Platform Price Comparison & Market Deals — ShopSmart{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <!-- Hero Banner -->
+    <div class="bg-white rounded-4 border p-4 p-lg-5 shadow-sm mb-4">
+        <div class="row align-items-center g-4">
+            <div class="col-lg-8">
+                <span class="badge bg-primary text-white rounded-pill px-3 py-1 mb-2 fw-semibold">
+                    <i class="bi bi-globe2 me-1"></i> Multi-Platform Intelligence
+                </span>
+                <h1 class="fw-bold mb-2">Cross-Platform Deals & Price Comparison</h1>
+                <p class="text-muted mb-0">
+                    Compare verified prices and similar product offerings across major e-commerce platforms like 
+                    <strong>Amazon</strong>, <strong>Flipkart</strong>, <strong>Croma</strong>, <strong>Reliance Digital</strong>, and <strong>Myntra</strong>.
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <div class="p-3 bg-light rounded-4 border d-inline-block text-start">
+                    <div class="small text-muted mb-1">Live Cross-Platform Coverage:</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge text-white" style="background-color: #FF9900;">Amazon</span>
+                        <span class="badge text-white" style="background-color: #2874F0;">Flipkart</span>
+                        <span class="badge text-white" style="background-color: #00B5B5;">Croma</span>
+                        <span class="badge text-white" style="background-color: #E42529;">Reliance</span>
+                        <span class="badge text-white" style="background-color: #FF3F6C;">Myntra</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Sort Bar -->
+    <div class="bg-white rounded-4 border p-3 mb-4 shadow-sm d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <!-- Platform Tabs -->
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="small text-muted fw-bold me-1">Platform:</span>
+            <a href="?platform=&sort={{ selected_sort }}" class="btn btn-sm {% if not selected_platform %}btn-primary-custom{% else %}btn-outline-custom{% endif %} rounded-pill px-3">
+                All Platforms
+            </a>
+            {% for plat in platforms %}
+            <a href="?platform={{ plat }}&sort={{ selected_sort }}" class="btn btn-sm {% if selected_platform == plat %}btn-primary-custom{% else %}btn-outline-custom{% endif %} rounded-pill px-3">
+                {{ plat }}
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Sort Select -->
+        <div class="d-flex align-items-center gap-2">
+            <label class="small text-muted text-nowrap mb-0">Sort By:</label>
+            <select class="form-select form-select-sm" style="width: 200px;" onchange="location = this.value;">
+                <option value="?{% if selected_platform %}platform={{ selected_platform }}&{% endif %}sort=savings" {% if selected_sort == 'savings' %}selected{% endif %}>Highest Savings on ShopSmart</option>
+                <option value="?{% if selected_platform %}platform={{ selected_platform }}&{% endif %}sort=similarity" {% if selected_sort == 'similarity' %}selected{% endif %}>Highest Similarity Match</option>
+                <option value="?{% if selected_platform %}platform={{ selected_platform }}&{% endif %}sort=price_asc" {% if selected_sort == 'price_asc' %}selected{% endif %}>Lowest External Price</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Cross-Platform Deals Grid -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+        {% for item in deals_list %}
+        <div class="col">
+            <div class="card h-100 rounded-4 border shadow-sm overflow-hidden position-relative product-card">
+                
+                <!-- Match Badge -->
+                <div class="position-absolute top-0 start-0 m-3 z-3">
+                    <span class="badge rounded-pill text-white shadow-sm" style="background-color: {{ item.deal.platform_color }}; font-size: 0.75rem;">
+                        <i class="bi {{ item.deal.platform_icon }} me-1"></i> {{ item.deal.platform_name }}
+                    </span>
+                </div>
+
+                <div class="position-absolute top-0 end-0 m-3 z-3">
+                    <span class="badge bg-white text-dark border shadow-sm small">
+                        {{ item.deal.similarity_score }}% Match
+                    </span>
+                </div>
+
+                <!-- Product Thumbnail -->
+                <a href="{{ item.product.get_absolute_url }}" class="product-thumb-wrapper" style="padding-top: 65%;">
+                    <img src="{{ item.product.display_image }}" alt="{{ item.product.name }}" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=80';">
+                </a>
+
+                <div class="card-body p-4 d-flex flex-column">
+                    <span class="product-category-tag">{{ item.product.category.name }}</span>
+                    <a href="{{ item.product.get_absolute_url }}" class="product-title fw-bold mb-2">
+                        {{ item.product.name }}
+                    </a>
+
+                    <!-- Comparison Table Inside Card -->
+                    <div class="p-3 bg-light rounded-3 border my-2 small">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted"><i class="bi bi-cart4 text-primary me-1"></i> ShopSmart Price:</span>
+                            <strong class="text-primary fs-6">₹{{ item.store_price|floatformat:0 }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted"><i class="bi {{ item.deal.platform_icon }} me-1"></i> {{ item.deal.platform_name }} Price:</span>
+                            <strong class="text-dark fs-6">₹{{ item.deal.price|floatformat:0 }}</strong>
+                        </div>
+
+                        <!-- Savings Badge -->
+                        {% if item.is_store_cheaper %}
+                        <div class="p-1 px-2 bg-success-subtle text-success rounded-2 text-center fw-bold" style="font-size: 0.75rem;">
+                            <i class="bi bi-check-circle-fill me-1"></i> Buy on ShopSmart & Save ₹{{ item.savings_on_store|floatformat:0 }}
+                        </div>
+                        {% elif item.is_external_cheaper %}
+                        <div class="p-1 px-2 bg-info-subtle text-info rounded-2 text-center fw-bold" style="font-size: 0.75rem;">
+                            <i class="bi bi-tag-fill me-1"></i> Special deal on {{ item.deal.platform_name }}
+                        </div>
+                        {% else %}
+                        <div class="p-1 px-2 bg-light text-muted rounded-2 text-center small">
+                            Equal price across both stores
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="small text-muted mb-3 d-flex justify-content-between">
+                        <span><i class="bi bi-truck me-1"></i>{{ item.deal.delivery_info }}</span>
+                        <span>⭐ {{ item.deal.rating }} ({{ item.deal.rating_count }})</span>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="mt-auto d-flex gap-2">
+                        <button class="btn btn-primary-custom btn-sm flex-grow-1 btn-cart-ajax" data-product-id="{{ item.product.id }}">
+                            <i class="bi bi-bag-plus me-1"></i> Buy on ShopSmart
+                        </button>
+                        <a href="{{ item.deal.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-dark btn-sm d-flex align-items-center gap-1" title="View on {{ item.deal.platform_name }}">
+                            <span class="small">View on {{ item.deal.platform_name }}</span>
+                            <i class="bi bi-box-arrow-up-right small"></i>
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5 text-muted">
+            <i class="bi bi-globe fs-1 d-block mb-3 text-secondary"></i>
+            <h5>No platform deals found</h5>
+            <p class="small">Try switching platform tabs or filters.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

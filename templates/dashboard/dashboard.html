@@ -1,0 +1,640 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin & ML Analytics Dashboard — ShopSmart{% endblock %}
+
+{% block extra_css %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5">
+    
+    <!-- Top Bar -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="bi bi-speedometer2 text-primary me-2"></i> Admin & ML Analytics Dashboard</h2>
+            <p class="text-muted small mb-0">Store performance, customer behavioral telemetry, and recommendation health</p>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <form method="POST" action="{% url 'admin_retrain_models' %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary-custom btn-sm">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Retrain ML Models
+                </button>
+            </form>
+            <a href="/admin/" class="btn btn-outline-custom btn-sm">
+                <i class="bi bi-shield-lock me-1"></i> Django Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-6 g-3 mb-4">
+        
+        <div class="col">
+            <div class="kpi-card" onclick="openDetailTab('users')" style="cursor: pointer;" title="Click to view all registered users">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span class="text-muted small fw-bold text-uppercase">Total Users</span>
+                    <div class="kpi-icon bg-primary-subtle text-primary"><i class="bi bi-people"></i></div>
+                </div>
+                <div class="kpi-value">{{ metrics.total_users }}</div>
+                <small class="text-success"><i class="bi bi-arrow-down-circle me-1"></i>View all users</small>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="kpi-card" onclick="openDetailTab('catalog')" style="cursor: pointer;" title="Click to view full product catalog">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span class="text-muted small fw-bold text-uppercase">Active Catalog</span>
+                    <div class="kpi-icon bg-info-subtle text-info"><i class="bi bi-box-seam"></i></div>
+                </div>
+                <div class="kpi-value">{{ metrics.total_products }}</div>
+                <small class="text-info"><i class="bi bi-arrow-down-circle me-1"></i>View all products</small>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="kpi-card" onclick="openDetailTab('orders')" style="cursor: pointer;" title="Click to view complete order ledger">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span class="text-muted small fw-bold text-uppercase">Total Orders</span>
+                    <div class="kpi-icon bg-success-subtle text-success"><i class="bi bi-bag-check"></i></div>
+                </div>
+                <div class="kpi-value">{{ metrics.total_orders }}</div>
+                <small class="text-success"><i class="bi bi-arrow-down-circle me-1"></i>View all orders</small>
+            </div>
+        </div>
+
+
+        <div class="col">
+            <div class="kpi-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span class="text-muted small fw-bold text-uppercase">Total Revenue</span>
+                    <div class="kpi-icon bg-warning-subtle text-warning"><i class="bi bi-currency-rupee"></i></div>
+                </div>
+                <div class="kpi-value">₹{{ metrics.total_revenue|floatformat:0 }}</div>
+                <small class="text-success">Paid transactions</small>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="kpi-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span class="text-muted small fw-bold text-uppercase">Conversion Rate</span>
+                    <div class="kpi-icon bg-danger-subtle text-danger"><i class="bi bi-funnel"></i></div>
+                </div>
+                <div class="kpi-value">{{ metrics.conversion_rate }}%</div>
+                <small class="text-muted">Purchases / Views</small>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="kpi-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <span class="text-muted small fw-bold text-uppercase">Interactions Logged</span>
+                    <div class="kpi-icon bg-secondary-subtle text-secondary"><i class="bi bi-cpu"></i></div>
+                </div>
+                <div class="kpi-value">{{ metrics.total_activities }}</div>
+                <small class="text-info">ML Training Events</small>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ML Model Diagnostic Status Banner -->
+    <div class="bg-white rounded-4 border p-4 shadow-sm mb-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-cpu text-primary me-2"></i> Machine Learning Engine Diagnostics</h5>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="p-3 bg-light rounded-3 border">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>Content-Based TF-IDF Model</strong>
+                        <span class="badge {% if ml_status.content_based_trained %}bg-success{% else %}bg-warning{% endif %}">
+                            {% if ml_status.content_based_trained %}Active & Cached{% else %}Not Yet Fitted{% endif %}
+                        </span>
+                    </div>
+                    <small class="text-muted">Indexed Catalog Size: <strong>{{ ml_status.content_products_indexed }}</strong> products</small>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="p-3 bg-light rounded-3 border">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <strong>Collaborative User-Item Matrix</strong>
+                        <span class="badge {% if ml_status.collab_matrix_trained %}bg-success{% else %}bg-warning{% endif %}">
+                            {% if ml_status.collab_matrix_trained %}Active & Cached{% else %}Sparse Interaction{% endif %}
+                        </span>
+                    </div>
+                    <small class="text-muted">Interaction Matrix: <strong>{{ ml_status.collab_users_count }}</strong> users × <strong>{{ ml_status.collab_items_count }}</strong> items</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js Visualizations Grid -->
+    <div class="row g-4 mb-4">
+        
+        <!-- Revenue / Sales Line Chart -->
+        <div class="col-lg-8">
+            <div class="bg-white rounded-4 border p-4 shadow-sm h-100">
+                <h5 class="fw-bold mb-3">7-Day Sales & Order Volume Trend</h5>
+                <div style="height: 320px;">
+                    <canvas id="salesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Distribution Doughnut Chart -->
+        <div class="col-lg-4">
+            <div class="bg-white rounded-4 border p-4 shadow-sm h-100">
+                <h5 class="fw-bold mb-3">Category Distribution</h5>
+                <div style="height: 320px;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Behavioral Activities Breakdown Bar Chart -->
+        <div class="col-lg-6">
+            <div class="bg-white rounded-4 border p-4 shadow-sm h-100">
+                <h5 class="fw-bold mb-3">User Behavioral Telemetry (ML Training Signals)</h5>
+                <div style="height: 300px;">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversion Funnel Chart -->
+        <div class="col-lg-6">
+            <div class="bg-white rounded-4 border p-4 shadow-sm h-100">
+                <h5 class="fw-bold mb-3">Shopper Conversion Funnel</h5>
+                <div style="height: 300px;">
+                    <canvas id="funnelChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Data Tables: Top Viewed, Top Selling, Recent Orders -->
+    <div class="row g-4 mb-4">
+        
+        <!-- Top Viewed Products -->
+        <div class="col-lg-4">
+            <div class="bg-white rounded-4 border p-4 shadow-sm h-100">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">Most Viewed Products</h5>
+                <div class="d-flex flex-column gap-3">
+                    {% for p in metrics.top_viewed_products %}
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="{{ p.display_image }}" class="rounded border" style="width: 40px; height: 40px; object-fit: cover;">
+                            <div>
+                                <a href="{{ p.get_absolute_url }}" class="small fw-semibold text-dark text-decoration-none text-truncate d-block" style="max-width: 170px;">
+                                    {{ p.name }}
+                                </a>
+                                <small class="text-muted">{{ p.category.name }}</small>
+                            </div>
+                        </div>
+                        <span class="badge bg-light text-dark border"><i class="bi bi-eye me-1"></i>{{ p.view_count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Selling Products -->
+        <div class="col-lg-4">
+            <div class="bg-white rounded-4 border p-4 shadow-sm h-100">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">Top Selling Products</h5>
+                <div class="d-flex flex-column gap-3">
+                    {% for p in metrics.top_selling %}
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="small fw-semibold text-dark text-truncate" style="max-width: 200px;">{{ p.product__name }}</div>
+                            <small class="text-muted">₹{{ p.product__price }}</small>
+                        </div>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">{{ p.total_sold }} units sold</span>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small">No sales recorded yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="col-lg-4">
+            <div class="bg-white rounded-4 border p-4 shadow-sm h-100">
+                <h5 class="fw-bold mb-3 border-bottom pb-2">Recent Store Orders</h5>
+                <div class="d-flex flex-column gap-2 max-h-300 overflow-auto">
+                    {% for ord in metrics.recent_orders %}
+                    <div class="p-2 bg-light rounded-3 border d-flex justify-content-between align-items-center small">
+                        <div>
+                            <div class="fw-bold text-dark">#{{ ord.order_number }}</div>
+                            <small class="text-muted">{{ ord.full_name }} • {{ ord.created_at|date:"M d" }}</small>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold text-primary">₹{{ ord.total_amount }}</div>
+                            <span class="badge {% if ord.order_status == 'Delivered' %}bg-success{% else %}bg-primary{% endif %}" style="font-size: 0.65rem;">{{ ord.order_status }}</span>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small">No recent orders.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    <!-- Comprehensive Data Records Explorer: Users, Catalog, Orders -->
+    <div id="recordsSection" class="bg-white rounded-4 border p-4 shadow-sm mb-5">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="bi bi-database text-primary me-2"></i> Entity Records & Data Directory</h4>
+                <p class="text-muted small mb-0">Detailed breakdown of registered accounts, product inventory, and customer transactions</p>
+            </div>
+            
+            <!-- Tab Navigation Pills -->
+            <ul class="nav nav-pills custom-pills" id="detailTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-semibold" id="users-tab" data-bs-toggle="pill" data-bs-target="#users-pane" type="button" role="tab">
+                        <i class="bi bi-people me-1"></i> Users <span class="badge bg-primary ms-1">{{ metrics.total_users }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="catalog-tab" data-bs-toggle="pill" data-bs-target="#catalog-pane" type="button" role="tab">
+                        <i class="bi bi-box-seam me-1"></i> Catalog <span class="badge bg-info ms-1">{{ metrics.total_products }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-semibold" id="orders-tab" data-bs-toggle="pill" data-bs-target="#orders-pane" type="button" role="tab">
+                        <i class="bi bi-bag-check me-1"></i> Orders <span class="badge bg-success ms-1">{{ metrics.total_orders }}</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="tab-content" id="detailTabsContent">
+            
+            <!-- TAB 1: USERS DIRECTORY -->
+            <div class="tab-pane fade show active" id="users-pane" role="tabpanel" tabindex="0">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-muted text-uppercase mb-0">Registered User Accounts</h6>
+                    <input type="text" id="userSearchInput" class="form-control form-control-sm w-auto" placeholder="Filter users..." onkeyup="filterTable('userSearchInput', 'usersTable')">
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="usersTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>User</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Orders</th>
+                                <th>Behavioral Activity</th>
+                                <th>Reviews</th>
+                                <th>Joined</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in metrics.all_users_list %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 34px; height: 34px; font-size: 0.85rem;">
+                                            {{ u.username|make_list|first|upper }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ u.username }}</div>
+                                            <small class="text-muted">{{ u.get_full_name|default:"Not specified" }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="small text-muted">{{ u.email|default:"No email" }}</span></td>
+                                <td>
+                                    {% if u.is_superuser %}
+                                        <span class="badge bg-danger">Superadmin</span>
+                                    {% elif u.is_staff %}
+                                        <span class="badge bg-warning text-dark">Staff / Admin</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary-subtle text-secondary">Customer</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-success-subtle text-success fw-bold">{{ u.order_count }} orders</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info fw-bold">{{ u.activity_count }} events</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ u.review_count }} reviews</span>
+                                </td>
+                                <td><small class="text-muted">{{ u.date_joined|date:"M d, Y" }}</small></td>
+                                <td class="text-end">
+                                    {% if u.id == request.user.id %}
+                                    <span class="badge bg-light text-muted border">You (Logged In)</span>
+                                    {% else %}
+                                    <form method="POST" action="{% url 'admin_delete_user' u.id %}" onsubmit="return confirm('Are you sure you want to permanently delete user account: {{ u.username }}? This will remove their profile and history.');" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.78rem;" title="Delete User">
+                                            <i class="bi bi-trash3 me-1"></i>Delete
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-3 text-muted">No users registered yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 2: ACTIVE PRODUCT CATALOG -->
+            <div class="tab-pane fade" id="catalog-pane" role="tabpanel" tabindex="0">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-muted text-uppercase mb-0">Product Catalog Inventory ({{ metrics.total_products }} Items)</h6>
+                    <input type="text" id="catalogSearchInput" class="form-control form-control-sm w-auto" placeholder="Filter products..." onkeyup="filterTable('catalogSearchInput', 'catalogTable')">
+                </div>
+                <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                    <table class="table table-hover align-middle mb-0" id="catalogTable">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Brand</th>
+                                <th>Price</th>
+                                <th>Discount</th>
+                                <th>Stock</th>
+                                <th>Views</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in metrics.all_products_list %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="{{ p.display_image }}" class="rounded border" style="width: 42px; height: 42px; object-fit: cover;">
+                                        <div>
+                                            <a href="{{ p.get_absolute_url }}" target="_blank" class="fw-semibold text-dark text-decoration-none text-truncate d-block small" style="max-width: 260px;" title="{{ p.name }}">
+                                                {{ p.name }}
+                                            </a>
+                                            <small class="text-muted">ID: #{{ p.id }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">{{ p.category.name }}</span></td>
+                                <td><span class="small fw-semibold text-secondary">{{ p.brand.name|default:"—" }}</span></td>
+                                <td>
+                                    <div class="fw-bold text-dark small">₹{{ p.discounted_price }}</div>
+                                    {% if p.discount_percent > 0 %}
+                                    <small class="text-muted text-decoration-line-through" style="font-size: 0.75rem;">₹{{ p.price }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if p.discount_percent > 0 %}
+                                    <span class="badge bg-danger-subtle text-danger">-{{ p.discount_percent }}%</span>
+                                    {% else %}
+                                    <span class="text-muted small">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if p.stock > 10 %}
+                                    <span class="badge bg-success-subtle text-success">{{ p.stock }} in stock</span>
+                                    {% elif p.stock > 0 %}
+                                    <span class="badge bg-warning-subtle text-warning">Low ({{ p.stock }})</span>
+                                    {% else %}
+                                    <span class="badge bg-danger-subtle text-danger">Out of stock</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="small text-muted"><i class="bi bi-eye me-1"></i>{{ p.view_count }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1">
+                                        <a href="{{ p.get_absolute_url }}" target="_blank" class="btn btn-outline-primary btn-sm py-0 px-2" style="font-size: 0.78rem;">
+                                            View <i class="bi bi-arrow-up-right"></i>
+                                        </a>
+                                        <form method="POST" action="{% url 'admin_delete_product' p.id %}" onsubmit="return confirm('Are you sure you want to delete product: {{ p.name|escapejs }}?');" class="d-inline">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.78rem;" title="Delete Product">
+                                                <i class="bi bi-trash3 me-1"></i>Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-3 text-muted">No products indexed.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 3: COMPLETE ORDERS LEDGER -->
+            <div class="tab-pane fade" id="orders-pane" role="tabpanel" tabindex="0">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-muted text-uppercase mb-0">Customer Orders Ledger ({{ metrics.total_orders }} Orders)</h6>
+                    <input type="text" id="orderSearchInput" class="form-control form-control-sm w-auto" placeholder="Filter orders..." onkeyup="filterTable('orderSearchInput', 'ordersTable')">
+                </div>
+                <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                    <table class="table table-hover align-middle mb-0" id="ordersTable">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Items</th>
+                                <th>Amount</th>
+                                <th>Payment</th>
+                                <th>Order Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ord in metrics.all_orders_list %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark small">#{{ ord.order_number }}</div>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ ord.tracking_number }}</small>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark small">{{ ord.full_name }}</div>
+                                    <small class="text-muted" style="font-size: 0.75rem;">{{ ord.email }} • {{ ord.city }}</small>
+                                </td>
+                                <td><small class="text-muted">{{ ord.created_at|date:"M d, Y, h:i A" }}</small></td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ ord.get_total_items }} item{{ ord.get_total_items|pluralize }}</span>
+                                </td>
+                                <td><span class="fw-bold text-primary small">₹{{ ord.total_amount }}</span></td>
+                                <td>
+                                    <span class="badge {% if ord.payment_status == 'Paid' %}bg-success-subtle text-success{% else %}bg-warning-subtle text-warning{% endif %}">
+                                        {{ ord.payment_method }}: {{ ord.payment_status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge {% if ord.order_status == 'Delivered' %}bg-success{% elif ord.order_status == 'Shipped' %}bg-primary{% elif ord.order_status == 'Cancelled' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                        {{ ord.order_status }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <form method="POST" action="{% url 'admin_delete_order' ord.id %}" onsubmit="return confirm('Are you sure you want to delete order #{{ ord.order_number }}?');" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger btn-sm py-0 px-2" style="font-size: 0.78rem;" title="Delete Order">
+                                            <i class="bi bi-trash3 me-1"></i>Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-3 text-muted">No orders placed yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Sales Trend Line Chart
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    new Chart(salesCtx, {
+        type: 'line',
+        data: {
+            labels: {{ metrics.sales_labels_json|safe }},
+            datasets: [{
+                label: 'Revenue (₹)',
+                data: {{ metrics.sales_revenue_json|safe }},
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                fill: true,
+                tension: 0.4,
+                borderWidth: 2.5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 2. Category Doughnut Chart
+    const catCtx = document.getElementById('categoryChart').getContext('2d');
+    new Chart(catCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ metrics.cat_labels_json|safe }},
+            datasets: [{
+                data: {{ metrics.cat_counts_json|safe }},
+                backgroundColor: [
+                    '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    // 3. Activity breakdown Bar Chart
+    const actCtx = document.getElementById('activityChart').getContext('2d');
+    new Chart(actCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ metrics.activity_labels_json|safe }},
+            datasets: [{
+                label: 'Interactions',
+                data: {{ metrics.activity_data_json|safe }},
+                backgroundColor: '#3b82f6',
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+    // 4. Funnel Chart (Views -> Wishlists -> Carts -> Purchases)
+    const funnelCtx = document.getElementById('funnelChart').getContext('2d');
+    new Chart(funnelCtx, {
+        type: 'bar',
+        data: {
+            labels: ['1. Product Views', '2. Wishlists', '3. Cart Adds', '4. Purchases'],
+            datasets: [{
+                label: 'Funnel Step Count',
+                data: {{ metrics.funnel_data_json|safe }},
+                backgroundColor: ['#60a5fa', '#a78bfa', '#f59e0b', '#10b981'],
+                borderRadius: 8
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+
+    // Helper functions for bottom records navigation & live filtering
+    window.openDetailTab = function(tabName) {
+        const tabTriggerEl = document.querySelector(`#${tabName}-tab`);
+        if (tabTriggerEl) {
+            const tab = new bootstrap.Tab(tabTriggerEl);
+            tab.show();
+            document.getElementById('recordsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
+    window.filterTable = function(inputId, tableId) {
+        const input = document.getElementById(inputId);
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById(tableId);
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+        for (let i = 0; i < rows.length; i++) {
+            const text = rows[i].textContent || rows[i].innerText;
+            if (text.toLowerCase().indexOf(filter) > -1) {
+                rows[i].style.display = '';
+            } else {
+                rows[i].style.display = 'none';
+            }
+        }
+    };
+});
+</script>
+{% endblock %}

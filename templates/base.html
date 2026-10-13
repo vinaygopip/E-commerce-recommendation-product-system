@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ShopSmart — Smart E-Commerce Recommendation System{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}ShopSmart is a personalized e-commerce recommendation system featuring content-based, collaborative, and hybrid filtering.{% endblock %}">
+
+    <!-- Bootstrap 5.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Main Navigation Bar -->
+    <nav class="navbar navbar-expand-xl navbar-custom sticky-top">
+        <div class="container-fluid px-xl-5 px-lg-4 px-3">
+            <!-- Brand -->
+            <a class="brand-logo me-2 me-xl-3" href="{% url 'landing' %}">
+                <i class="bi bi-cart4 text-primary fs-3"></i>
+                <span class="brand-text">Shop<span style="color: #4f46e5;">Smart</span></span>
+            </a>
+
+            <!-- Mobile Toggle -->
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <i class="bi bi-list fs-2"></i>
+            </button>
+
+            <!-- Navbar Center & Right -->
+            <div class="collapse navbar-collapse" id="navbarContent">
+                
+                <!-- Search Bar -->
+                <form class="search-form mx-xl-3 my-2 my-xl-0" method="GET" action="{% url 'product_list' %}">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" name="q" class="form-control search-input" placeholder="Search products, brands..." value="{{ request.GET.q }}">
+                </form>
+
+                <!-- Navigation Links -->
+                <ul class="navbar-nav me-auto mb-2 mb-xl-0 align-items-xl-center">
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold" href="{% url 'landing' %}"><i class="bi bi-house me-1"></i>Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold" href="{% url 'home' %}"><i class="bi bi-shop me-1"></i>Store</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold" href="{% url 'product_list' %}">Products</a>
+                    </li>
+                    
+                    <!-- Categories Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fw-semibold" href="#" role="button" data-bs-toggle="dropdown">
+                            Categories
+                        </a>
+                        <ul class="dropdown-menu border-0 shadow-lg rounded-3">
+                            {% for cat in nav_categories %}
+                            <li>
+                                <a class="dropdown-item py-2 d-flex align-items-center gap-2" href="{% url 'product_list_by_category' cat.slug %}">
+                                    <i class="bi {{ cat.icon }} text-primary"></i>
+                                    <span>{{ cat.name }}</span>
+                                </a>
+                            </li>
+                            {% empty %}
+                            <li><a class="dropdown-item" href="{% url 'product_list' %}">All Products</a></li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold text-primary" href="{% url 'recommendations_showcase' %}">
+                            <i class="bi bi-cpu me-1"></i>AI Engine
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold text-success" href="{% url 'cross_platform_deals' %}">
+                            <i class="bi bi-tags me-1"></i>Compare Deals
+                        </a>
+                    </li>
+
+                    {% if user.is_staff or user.is_superuser %}
+                    <li class="nav-item">
+                        <a class="nav-link fw-semibold text-danger" href="{% url 'admin_dashboard' %}">
+                            <i class="bi bi-graph-up-arrow me-1"></i>Analytics
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <!-- Right Action Buttons -->
+                <div class="d-flex align-items-center gap-2 gap-xl-3 mt-3 mt-xl-0">
+                    
+                    <!-- Wishlist Button -->
+                    <a href="{% url 'wishlist' %}" class="nav-action-btn" title="Wishlist">
+                        <i class="bi bi-heart fs-5"></i>
+                        <span id="nav-wishlist-badge" class="badge bg-danger nav-badge" {% if navbar_wishlist_count == 0 %}style="display:none;"{% endif %}>
+                            {{ navbar_wishlist_count }}
+                        </span>
+                    </a>
+
+                    <!-- Cart Button -->
+                    <a href="{% url 'cart_detail' %}" class="nav-action-btn" title="Shopping Cart">
+                        <i class="bi bi-bag fs-5"></i>
+                        <span id="nav-cart-badge" class="badge bg-primary nav-badge" {% if navbar_cart_count == 0 %}style="display:none;"{% endif %}>
+                            {{ navbar_cart_count }}
+                        </span>
+                    </a>
+
+                    <div class="vr mx-1 d-none d-sm-block text-secondary opacity-25"></div>
+
+                    <!-- User Profile / Auth -->
+                    {% if user.is_authenticated %}
+                    <div class="dropdown">
+                        <button class="btn btn-outline-custom d-flex align-items-center gap-2 py-2 px-3 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle fs-5 text-primary"></i>
+                            <span class="fw-semibold">{{ user.first_name|default:user.username }}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-3 py-2">
+                            <li><span class="dropdown-header text-uppercase fs-xs">Signed in as <strong>{{ user.username }}</strong></span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item py-2" href="{% url 'profile' %}"><i class="bi bi-person me-2"></i>My Profile</a></li>
+                            <li><a class="dropdown-item py-2" href="{% url 'order_list' %}"><i class="bi bi-box-seam me-2"></i>Order History</a></li>
+                            <li><a class="dropdown-item py-2" href="{% url 'wishlist' %}"><i class="bi bi-heart me-2"></i>Saved Wishlist</a></li>
+                            {% if user.is_staff or user.is_superuser %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item py-2 text-primary" href="{% url 'admin_dashboard' %}"><i class="bi bi-speedometer2 me-2"></i>ML Analytics Dashboard</a></li>
+                            <li><a class="dropdown-item py-2" href="/admin/"><i class="bi bi-shield-lock me-2"></i>Django Admin</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item py-2 text-danger" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
+                        </ul>
+                    </div>
+                    {% else %}
+                    <div class="d-flex align-items-center gap-2">
+                        <a href="{% url 'login' %}" class="btn btn-outline-custom btn-sm px-3 py-2 text-nowrap">Sign In</a>
+                        <a href="{% url 'register' %}" class="btn btn-primary-custom btn-sm px-3 py-2 text-nowrap">Register</a>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Global Alert / Messages Container -->
+    <div class="container mt-3">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show rounded-3 shadow-sm d-flex align-items-center gap-2" role="alert">
+                    <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill text-success{% elif message.tags == 'error' or message.tags == 'danger' %}bi-exclamation-triangle-fill text-danger{% else %}bi-info-circle-fill text-primary{% endif %} fs-5"></i>
+                    <div>{{ message }}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Main Content -->
+    <main class="py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+
+
+    <!-- Bootstrap 5.3 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom Scripts -->
+    <script src="/static/js/main.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

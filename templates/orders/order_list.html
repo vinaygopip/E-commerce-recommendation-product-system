@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}My Orders — ShopSmart{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">My Orders</h2>
+            <p class="text-muted small">Track and manage your past purchases</p>
+        </div>
+        <a href="{% url 'product_list' %}" class="btn btn-outline-custom btn-sm">Explore More Products</a>
+    </div>
+
+    {% if orders %}
+    <div class="d-flex flex-column gap-4">
+        {% for order in orders %}
+        <div class="bg-white rounded-4 border p-4 shadow-sm">
+            <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-3 gap-2">
+                <div>
+                    <span class="fw-bold text-dark me-3">Order #{{ order.order_number }}</span>
+                    <span class="text-muted small">Placed on {{ order.created_at|date:"M d, Y" }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge {% if order.order_status == 'Delivered' %}bg-success{% elif order.order_status == 'Cancelled' %}bg-danger{% else %}bg-primary{% endif %} rounded-pill px-3 py-1">
+                        {{ order.order_status }}
+                    </span>
+                    <a href="{% url 'order_detail' order.order_number %}" class="btn btn-sm btn-outline-custom">View Order</a>
+                    <a href="{% url 'order_invoice' order.order_number %}" class="btn btn-sm btn-outline-danger" title="Download PDF Invoice">
+                        <i class="bi bi-file-earmark-pdf"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for item in order.items.all %}
+                        <div class="d-flex align-items-center gap-2 bg-light rounded-3 p-2 border">
+                            {% if item.product %}
+                            <img src="{{ item.product.display_image }}" class="rounded object-fit-cover" style="width: 38px; height: 38px;">
+                            {% endif %}
+                            <span class="small fw-semibold text-truncate" style="max-width: 200px;">{{ item.product_name }}</span>
+                            <span class="badge bg-secondary rounded-pill small">x{{ item.quantity }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <small class="text-muted d-block">Total Amount</small>
+                    <span class="fs-5 fw-bold text-primary">₹{{ order.total_amount }}</span>
+                    <small class="text-muted d-block">Via {{ order.get_payment_method_display }}</small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-4 border p-5 text-center shadow-sm">
+        <i class="bi bi-bag-x fs-1 text-muted d-block mb-3"></i>
+        <h4 class="fw-bold">No orders placed yet</h4>
+        <p class="text-muted small">When you purchase products, they will appear here with live tracking.</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary-custom mt-2">Start Browsing</a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

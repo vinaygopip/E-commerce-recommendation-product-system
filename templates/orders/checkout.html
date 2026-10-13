@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Checkout — ShopSmart{% endblock %}
+
+{% block content %}
+<div class="container">
+    
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1">Secure Checkout</h2>
+        <p class="text-muted small">Provide your shipping address and select a payment method</p>
+    </div>
+
+    <form method="POST" action="{% url 'checkout' %}">
+        {% csrf_token %}
+        <div class="row g-4">
+            
+            <!-- Left: Shipping Address & Payment -->
+            <div class="col-lg-8">
+                
+                <!-- Shipping Info Card -->
+                <div class="bg-white rounded-4 border p-4 shadow-sm mb-4">
+                    <h5 class="fw-bold mb-3 border-bottom pb-2">
+                        <i class="bi bi-geo-alt text-primary me-2"></i> 1. Shipping Address
+                    </h5>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Full Name *</label>
+                            {{ form.full_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Phone Number *</label>
+                            {{ form.phone }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Email Address *</label>
+                            {{ form.email }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Street Address, House/Apartment No. *</label>
+                            {{ form.address }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">City *</label>
+                            {{ form.city }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">State *</label>
+                            {{ form.state }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">PIN / Postal Code *</label>
+                            {{ form.postal_code }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Method Card -->
+                <div class="bg-white rounded-4 border p-4 shadow-sm mb-4">
+                    <h5 class="fw-bold mb-3 border-bottom pb-2">
+                        <i class="bi bi-credit-card text-primary me-2"></i> 2. Payment Method
+                    </h5>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="border rounded-3 p-3 bg-light d-flex align-items-center gap-3">
+                                <i class="bi bi-credit-card-2-front fs-3 text-primary"></i>
+                                <div>
+                                    <div class="fw-bold small">Online Mock Payment</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">Credit / Debit / UPI / NetBanking</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded-3 p-3 bg-light d-flex align-items-center gap-3">
+                                <i class="bi bi-cash-coin fs-3 text-success"></i>
+                                <div>
+                                    <div class="fw-bold small">Cash on Delivery (COD)</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">Pay upon package arrival</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Select Payment Gateway / Option *</label>
+                        {{ form.payment_method }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Delivery Instructions (Optional)</label>
+                        {{ form.notes }}
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right: Order Review Summary -->
+            <div class="col-lg-4">
+                <div class="bg-white rounded-4 border p-4 shadow-sm sticky-top" style="top: 90px;">
+                    <h5 class="fw-bold mb-3 border-bottom pb-2">Order Items ({{ cart.get_total_items }})</h5>
+
+                    <div class="d-flex flex-column gap-2 mb-3 max-h-250 overflow-auto">
+                        {% for item in cart_items %}
+                        <div class="d-flex justify-content-between align-items-center small">
+                            <div class="d-flex align-items-center gap-2">
+                                <img src="{{ item.product.display_image }}" class="rounded border" style="width: 40px; height: 40px; object-fit: cover;">
+                                <div>
+                                    <div class="text-truncate fw-semibold" style="max-width: 170px;">{{ item.product.name }}</div>
+                                    <span class="text-muted">Qty: {{ item.quantity }}</span>
+                                </div>
+                            </div>
+                            <span class="fw-bold">₹{{ item.get_subtotal }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="border-top pt-3">
+                        <div class="d-flex justify-content-between mb-2 small text-muted">
+                            <span>Subtotal</span>
+                            <span>₹{{ subtotal }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 small text-muted">
+                            <span>Shipping</span>
+                            <span>{% if shipping == 0 %}<strong class="text-success">FREE</strong>{% else %}₹{{ shipping }}{% endif %}</span>
+                        </div>
+                        {% if savings > 0 %}
+                        <div class="d-flex justify-content-between mb-2 small text-success">
+                            <span>Total Savings</span>
+                            <span>- ₹{{ savings }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                            <span class="fw-bold fs-5">Total to Pay</span>
+                            <span class="fw-bold fs-4 text-primary">₹{{ total }}</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary-custom w-100 py-3 mt-4 fw-bold">
+                        <i class="bi bi-lock-fill me-1"></i> Place Order Now
+                    </button>
+                    
+                    <p class="text-center text-muted small mt-2 mb-0" style="font-size: 0.75rem;">
+                        This is an academic simulation. No real money will be charged.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </form>
+
+</div>
+{% endblock %}
